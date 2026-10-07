@@ -1,0 +1,37 @@
+---
+- name: Bootstrap EKS access
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    aws_region: us-east-1
+    eks_cluster_name: eks_cluster
+
+  tasks:
+
+    - name: Verify AWS identity
+      ansible.builtin.command:
+        cmd: aws sts get-caller-identity
+      register: aws_identity
+      changed_when: false
+
+    - name: Verify EKS cluster exists
+      ansible.builtin.command:
+        cmd: aws eks describe-cluster --name "{{ eks_cluster_name }}" --region "{{ aws_region }}"
+      register: eks_cluster
+      changed_when: false
+
+    - name: Update kubeconfig for EKS
+      ansible.builtin.command:
+        cmd: aws eks update-kubeconfig --region "{{ aws_region }}" --name "{{ eks_cluster_name }}"
+
+    - name: Verify Kubernetes connectivity
+      ansible.builtin.command:
+        cmd: kubectl cluster-info
+      register: cluster_info
+      changed_when: false
+
+    - name: Display Kubernetes cluster information
+      ansible.builtin.debug:
+        var: cluster_info.stdout

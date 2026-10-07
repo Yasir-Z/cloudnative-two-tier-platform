@@ -1,0 +1,44 @@
+services:
+  # 1. PostgreSQL Database Service
+  db:
+    image: postgres:15-alpine
+    container_name: db
+    restart: always
+    environment:
+      POSTGRES_DB: twotierdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: AppPassword123!
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Auto table creation
+    networks:
+      - app-network
+
+  # 2. Flask Backend API Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: two-tier-api
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: db   # Service name automatically resolves as hostname inside Docker network
+      DB_PORT: 5432
+      DB_NAME: twotierdb
+      DB_USER: appuser
+      DB_PASSWORD: AppPassword123!
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

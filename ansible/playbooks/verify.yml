@@ -1,0 +1,53 @@
+---
+- name: Verify application deployment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    app_namespace: default
+    app_deployment_name: re-build-app
+    ansible_python_interpreter: "{{ lookup('env', 'VIRTUAL_ENV') }}/bin/python"
+
+  tasks:
+
+    - name: Get application deployment
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        name: "{{ app_deployment_name }}"
+        namespace: "{{ app_namespace }}"
+        kubeconfig: "{{ lookup('env', 'HOME') }}/.kube/config" 
+      register: deployment_info
+
+    - name: Verify deployment exists
+      ansible.builtin.assert:
+        that:
+          - deployment_info.resources | length > 0
+        fail_msg: "Application deployment was not found."
+        success_msg: "Application deployment exists."
+
+    - name: Verify desired replicas are ready
+      ansible.builtin.assert:
+        that:
+          - deployment_info.resources[0].status.readyReplicas | default(0) | int == deployment_info.resources[0].spec.replicas | int
+        fail_msg: "Application pods are not fully ready."
+        success_msg: "All application replicas are ready."
+
+    - name: Get application pods
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: "{{ app_namespace }}"
+        label_selectors:
+          - app=re-build-app
+        kubeconfig: "{{ lookup('env', 'HOME') }}/.kube/config"
+      register: pod_info
+
+    - name: Display verification result
+      ansible.builtin.debug:
+        msg:
+          - "Deployment: {{ app_deployment_name }}"
+          - "Desired replicas: {{ deployment_info.resources[0].spec.replicas }}"
+          - "Ready replicas: {{ deployment_info.resources[0].status.readyReplicas | default(0) }}"
+          - "Application pods found: {{ pod_info.resources | length }}"

@@ -1,0 +1,21 @@
+---
+- name: Remove application from EKS
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+    ansible_python_interpreter: "{{ lookup('env', 'VIRTUAL_ENV') }}/bin/python"
+
+  tasks:
+    - name: Remove application Kubernetes manifests
+      kubernetes.core.k8s:
+        state: absent
+        src: "{{ item }}"
+        kubeconfig: "{{ ansible_facts['env']['HOME'] }}/.kube/config"
+      loop:
+        - "{{ playbook_dir }}/../../k8s/alb-ingress.yml"
+        - "{{ playbook_dir }}/../../k8s/service.yml"
+        - "{{ playbook_dir }}/../../k8s/deployment.yml"
+        - "{{ playbook_dir }}/../../k8s/sa.yml"
+        - "{{ playbook_dir }}/../../k8s/configmap.yml"

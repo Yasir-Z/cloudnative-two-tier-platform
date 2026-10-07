@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: re-build-app-config
+  namespace: default
+
+data:
+  DB_HOST: "terraform-7f7e6aef62afcf4ab88c18a407.cilcwuwg294j.us-east-1.rds.amazonaws.com"
+  DB_PORT: "5432"
+  DB_NAME: "mydb"
+  AWS_REGION: "us-east-1"
+  AWS_SECRET_NAME: "postgresql-credentials"
